@@ -1,0 +1,61 @@
+digraph G {
+
+    example_node [
+        URL="https://github.com/guy4261/polkadot/blob/main/README.md"
+        fingerprint="* People suffering"
+        start=36
+        end=36
+    ]
+
+    dotfile [shape="box" peripheries=2]
+    dotfile_read [
+        shape="ellipse"
+        peripheries=2
+        fingerprint="def dotfile_read(dot_file_path: str) -> pydot.core.Graph:"
+    ]
+
+    graph_object [shape="box"]
+    dotfile -> dotfile_read -> graph_object
+    
+    get_nodes [shape="ellipse"]
+    node_list [shape="box"]
+    graph_object -> get_nodes -> node_list
+
+    node_list -> a_node [style="dashed"]
+
+    subgraph cluster_foreach_node {
+        label="foreach node"
+        labeljust="l"
+
+        a_node [shape="box" label="node"]
+        get_url [shape="ellipse"]
+        get_fingerprint [shape="ellipse"]
+        url [shape="box"]
+        fingerprint [shape="box"]
+        a_node -> get_url -> url
+        a_node -> get_fingerprint -> fingerprint
+
+        get_url_contents [shape="ellipse" peripheries=2]
+        contents [shape="box"]
+        url -> get_url_contents -> contents
+
+        contains [shape="ellipse" label="contains?"]
+        a_result [shape="box"]
+        {contents; fingerprint} -> contains -> a_result
+    }
+
+    result_list [shape="box"]
+    a_result -> result_list [style="dashed"]
+
+    graph_object_0 [shape="box" style="diagonals" label="graph_object"]
+    styled_graph [shape="box"]
+    apply_style [shape="ellipse"]
+    {graph_object_0; result_list} -> apply_style -> styled_graph
+
+    dotfile_write [shape="ellipse" peripheries=2]
+    styled_dotfile [shape="box" peripheries=2]
+    end [shape="point" peripheries=2]    
+    styled_graph -> dotfile_write -> styled_dotfile -> end
+    
+    graph_object -> graph_object_0 [style=invis minlen=2]
+}
