@@ -47,7 +47,7 @@ digraph G {
         get_url_contents [
             shape="ellipse"
             peripheries=2
-            fingerprint="def get_url_contents(url: str) -> str:"
+            fingerprint="def get_url_contents(url: str, /, cache={}) -> str:"
             URL="https://github.com/guy4261/polkadot2/blob/main/polkadot.py"
         ]
         contents [shape="box"]
