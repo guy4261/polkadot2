@@ -5,6 +5,7 @@ Usage: $ ./polkadot.py design.gv design.styled.gv
 """
 import argparse
 import base64
+import json
 import os
 import shutil
 import sys
@@ -19,11 +20,21 @@ DEBUG = None
 GH = shutil.which("gh")
 REPOS_KEYWORD = "repos"
 
+CONFIG_FILE = "~/.polkadot2.json"
+CONFIG_FILE = os.path.expanduser(CONFIG_FILE)
+print(CONFIG_FILE)
+REPOS = None
+if os.path.exists(CONFIG_FILE):
+    config = json.load(open(CONFIG_FILE))
+    REPOS = config.get("repos", dict())
+else:
+    REPOS = dict()
+
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT_PATH", type=str, help="design.gv")
-    parser.add_argument("OUTPUT_PATH", type=str, help="design.styled.gv")
+    parser.add_argument("OUTPUT_PATH", type=str, help="design.styled.gv", default=None)
     return parser
 
 
@@ -75,15 +86,41 @@ def get_github_public_url(url: str) -> str:
     pass
 
 
-def get_url_contents(url: str, /, cache={}) -> str:
+def get_url_contents(url: str, local_first: bool = True, /, cache={}) -> str:
     """
+
+    >>> urlparse("https://github.com/guy4261/polkadot2/blob/main/polkadot.py")
+    ParseResult(scheme='https', netloc='github.com', path='/guy4261/polkadot2/blob/main/polkadot.py', params='', query='', fragment='')
+
     $ gh api repos/guy4261/polkadot/contents/README.md --jq '.content' | base64 --decode
     """
     if url in cache:
         return cache[url]
+    """
+    {
+        "repos": {
+            "https://github.com/guy4261/polkadot2": "/Users/guyr/Documents/polkadot2"
+        }
+    }
+    """
+    if local_first:
+        p = urlparse(url)
+        # >>> urlparse("https://github.com/guy4261/polkadot2/blob/main/polkadot.py")
+        # ParseResult(scheme='https', netloc='github.com', path='/guy4261/polkadot2/blob/main/polkadot.py', params='', query='', fragment='')
+        user, reponame, blob, branch, path = p.path.strip(os.path.sep).split(
+            os.path.sep, 4
+        )
+        repo = f"{p.scheme}://{p.netloc}/{user}/{reponame}"
+        print("repo => ", repo)
+        print(REPOS)
+        local = REPOS.get(repo)
+        if local is not None:
+            return open(os.path.join(local, path)).read()
+
     cmd = f"{GH} api {os.path.join(REPOS_KEYWORD, urlparse(url).path.strip(os.path.sep))} --jq '.content'"
     cmd = cmd.replace("blob/main", "contents", 1)
     status, output = getstatusoutput(cmd)
+    print(cmd, "=>", status)
     assert status == 0, output
     contents = base64.b64decode(output)
     contents = contents.decode("utf-8")
@@ -159,6 +196,11 @@ def main():
     args = parser.parse_args()
     dot_file_path = args.INPUT_PATH
     output_file_path = args.OUTPUT_PATH
+    if output_file_path is None:
+        head, tail = dot_file_path.rsplit(".", 1)
+        output_file_path = f"{head}.styled.{tail}"
+        verb = "Overwriting" if os.path.exists(output_file_path) else "Using"
+        print(f"{verb} {output_file_path} as the output path")
     polkadot(dot_file_path, output_file_path)
 
 
