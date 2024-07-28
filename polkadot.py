@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 import pydot
 
+DEBUG = None
 GH = shutil.which("gh")
 REPOS_KEYWORD = "repos"
 
@@ -74,20 +75,27 @@ def get_github_public_url(url: str) -> str:
     pass
 
 
-def get_url_contents(url: str) -> str:
+def get_url_contents(url: str, /, cache={}) -> str:
     """
     $ gh api repos/guy4261/polkadot/contents/README.md --jq '.content' | base64 --decode
     """
+    if url in cache:
+        return cache[url]
     cmd = f"{GH} api {os.path.join(REPOS_KEYWORD, urlparse(url).path.strip(os.path.sep))} --jq '.content'"
     cmd = cmd.replace("blob/main", "contents", 1)
     status, output = getstatusoutput(cmd)
     assert status == 0, output
     contents = base64.b64decode(output)
     contents = contents.decode("utf-8")
+    cache[url] = contents
     return contents
 
 
-def contains(fingerprint, content):
+def normalize(s: str) -> List[str]:
+    return "\n".join([line.strip() for line in s.splitlines() if len(line.strip()) > 0])
+
+
+def contains(fingerprint: str, content: str) -> bool:
     assert isinstance(fingerprint, str) and len(fingerprint) > 0
     assert isinstance(content, str) and len(content) > 0
 
@@ -98,11 +106,6 @@ def contains(fingerprint, content):
             pass  # so maybe not
     elif (fingerprint[0], fingerprint[-1]) == ("<", ">"):
         fingerprint = fingerprint[1:-1]
-
-    def normalize(s):
-        return "\n".join(
-            [line.strip() for line in s.splitlines() if len(line.strip()) > 0]
-        )
 
     return normalize(fingerprint) in normalize(content)
 
@@ -146,6 +149,8 @@ def polkadot(dot_file_path: str, output_file_path: str):
 
     dotfile_write(styled_graph, output_file_path)
     os.system(f"dotsvg {output_file_path}")
+    global DEBUG
+    DEBUG = locals()
     return styled_graph
 
 
@@ -161,4 +166,4 @@ if __name__ == "__main__":
     main()
 
 
-sys.exit(1)
+# sys.exit(1)
