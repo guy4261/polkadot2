@@ -22,7 +22,6 @@ REPOS_KEYWORD = "repos"
 
 CONFIG_FILE = "~/.polkadot2.json"
 CONFIG_FILE = os.path.expanduser(CONFIG_FILE)
-print(CONFIG_FILE)
 REPOS = None
 if os.path.exists(CONFIG_FILE):
     config = json.load(open(CONFIG_FILE))
@@ -111,8 +110,6 @@ def get_url_contents(url: str, local_first: bool = True, /, cache={}) -> str:
             os.path.sep, 4
         )
         repo = f"{p.scheme}://{p.netloc}/{user}/{reponame}"
-        print("repo => ", repo)
-        print(REPOS)
         local = REPOS.get(repo)
         if local is not None:
             return open(os.path.join(local, path)).read()
@@ -120,7 +117,6 @@ def get_url_contents(url: str, local_first: bool = True, /, cache={}) -> str:
     cmd = f"{GH} api {os.path.join(REPOS_KEYWORD, urlparse(url).path.strip(os.path.sep))} --jq '.content'"
     cmd = cmd.replace("blob/main", "contents", 1)
     status, output = getstatusoutput(cmd)
-    print(cmd, "=>", status)
     assert status == 0, output
     contents = base64.b64decode(output)
     contents = contents.decode("utf-8")
